@@ -62,6 +62,7 @@ Deliverables:
 - `GET /retrieval/status/:id`
 - `GET /sp/:id/metrics`
 - Persistence for `RetrievalRequests`, `Receipts`, and `Providers`.
+- Filecoin EVM testnet escrow calls through configured client and Storage Provider signers.
 
 Acceptance criteria:
 
@@ -76,6 +77,7 @@ Deliverables:
 - Validation for Storage Provider signature.
 - CID match check against the original request.
 - Client acknowledgment check.
+- Receipt hash submission to escrow followed by client confirmation.
 
 Acceptance criteria:
 

@@ -27,6 +27,7 @@ export interface CreateRetrievalRequestInput {
 
 export interface SubmitReceiptInput {
   retrieval_id: string;
-  signature: string;
+  provider_signature: string;
+  client_confirmation: string;
   timestamp: string;
 }

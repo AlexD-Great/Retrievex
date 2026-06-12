@@ -1,10 +1,13 @@
 import { Router } from "express";
+import type { ReputationService } from "../services/reputation.service.js";
 
-export const providerRouter = Router();
+export function createProviderRouter(reputationService: ReputationService) {
+  const router = Router();
 
-providerRouter.get("/:id/metrics", async (req, res) => {
-  res.status(501).json({
-    id: req.params.id,
-    error: "GET /sp/:id/metrics must return Phase 1 provider metrics."
+  router.get("/:id/metrics", async (req, res) => {
+    const metrics = await reputationService.getMetrics(req.params.id);
+    res.json(metrics);
   });
-});
+
+  return router;
+}

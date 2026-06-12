@@ -13,6 +13,14 @@ export class RetrievalService {
   ) {}
 
   async createRequest(input: CreateRetrievalRequestInput): Promise<RetrievalRequest> {
+    if (input.client_address.toLowerCase() !== this.escrow.getClientAddress().toLowerCase()) {
+      throw new Error("Client address must match configured client signer.");
+    }
+
+    if (input.sp_address.toLowerCase() !== this.escrow.getProviderAddress().toLowerCase()) {
+      throw new Error("Storage Provider address must match configured SP signer.");
+    }
+
     const escrow = await this.escrow.lockFunds(input);
     const request: RetrievalRequest = {
       id: escrow.escrow_request_id || randomUUID(),

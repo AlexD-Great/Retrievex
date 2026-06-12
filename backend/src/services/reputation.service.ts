@@ -13,6 +13,14 @@ export class ReputationService {
   }
 
   async getMetrics(providerId: string): Promise<ProviderMetrics | null> {
-    return this.providers.findMetrics(providerId);
+    return (
+      (await this.providers.findMetrics(providerId)) ?? {
+        id: providerId,
+        reputation_score: 0,
+        total_retrievals: 0,
+        success_rate: 0,
+        average_response_time_ms: 0
+      }
+    );
   }
 }

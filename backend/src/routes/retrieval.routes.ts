@@ -1,22 +1,68 @@
 import { Router } from "express";
+import { z } from "zod";
+import type { ReceiptService } from "../services/receipt.service.js";
+import type { RetrievalService } from "../services/retrieval.service.js";
 
-export const retrievalRouter = Router();
-
-retrievalRouter.post("/request", async (_req, res) => {
-  res.status(501).json({
-    error: "POST /retrieval/request must create escrow-backed retrieval requests."
-  });
+const createRequestSchema = z.object({
+  cid: z.string().min(1),
+  client_address: z.string().min(1),
+  sp_address: z.string().min(1),
+  amount_fil: z.string().refine((amount) => Number(amount) > 0, "amount_fil must be positive")
 });
 
-retrievalRouter.post("/receipt", async (_req, res) => {
-  res.status(501).json({
-    error: "POST /retrieval/receipt must validate a receipt and trigger settlement."
-  });
+const submitReceiptSchema = z.object({
+  retrieval_id: z.string().min(1),
+  provider_signature: z.string().min(1),
+  client_confirmation: z.string().min(1),
+  timestamp: z.string().min(1)
 });
 
-retrievalRouter.get("/status/:id", async (req, res) => {
-  res.status(501).json({
-    id: req.params.id,
-    error: "GET /retrieval/status/:id must return retrieval status."
+export function createRetrievalRouter(
+  retrievalService: RetrievalService,
+  receiptService: ReceiptService
+) {
+  const router = Router();
+
+  router.post("/request", async (req, res) => {
+    const parsed = createRequestSchema.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({ error: parsed.error.flatten() });
+      return;
+    }
+
+    try {
+      const request = await retrievalService.createRequest(parsed.data);
+      res.status(201).json(request);
+    } catch (error) {
+      res.status(400).json({ error: error instanceof Error ? error.message : "Request failed." });
+    }
   });
-});
+
+  router.post("/receipt", async (req, res) => {
+    const parsed = submitReceiptSchema.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({ error: parsed.error.flatten() });
+      return;
+    }
+
+    try {
+      const receipt = await receiptService.submitReceipt(parsed.data);
+      res.status(201).json(receipt);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Receipt submission failed.";
+      res.status(message === "Retrieval request not found." ? 404 : 400).json({ error: message });
+    }
+  });
+
+  router.get("/status/:id", async (req, res) => {
+    const request = await retrievalService.getStatus(req.params.id);
+    if (!request) {
+      res.status(404).json({ error: "Retrieval request not found." });
+      return;
+    }
+
+    res.json(request);
+  });
+
+  return router;
+}

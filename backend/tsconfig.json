@@ -2,12 +2,7 @@
   "extends": "../tsconfig.base.json",
   "compilerOptions": {
     "outDir": "dist",
-    "rootDir": "src",
-    "paths": {
-      "@retrievex/shared": [
-        "../shared/src/index.ts"
-      ]
-    }
+    "rootDir": "src"
   },
   "include": [
     "src"

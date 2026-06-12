@@ -120,6 +120,12 @@ The backend exposes only the Phase 1 PRD endpoints:
 
 No additional public API surface is defined.
 
+Backend execution uses configured Filecoin EVM testnet signers for the Phase 1 MVP:
+
+- `CLIENT_PRIVATE_KEY` creates escrow requests and confirms receipts.
+- `SP_PRIVATE_KEY` submits signed receipt hashes.
+- `RETRIEVAL_TIMEOUT_SECONDS` defaults to `86400` seconds.
+
 ## Data Model
 
 Tables are limited to the PRD schema:

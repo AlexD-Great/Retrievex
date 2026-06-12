@@ -14,3 +14,24 @@ No zk proofs, slashing, marketplace logic, pricing dynamics, or SLA systems belo
 Framework: Node.js with Express.
 
 Reason: small REST API surface that matches the PRD endpoint list without adding event systems or extra service boundaries.
+
+## Required Environment
+
+Use `.env.example` at the repository root as the placeholder template.
+
+- `PORT`
+- `DATABASE_URL`
+- `FILECOIN_RPC_URL`
+- `ESCROW_CONTRACT_ADDRESS`
+- `CLIENT_PRIVATE_KEY`
+- `SP_PRIVATE_KEY`
+- `RETRIEVAL_TIMEOUT_SECONDS`
+
+The backend-driven Phase 1 MVP uses separate client and Storage Provider testnet keys because the escrow contract enforces caller roles.
+
+## Build
+
+```bash
+npm.cmd run build --workspace shared
+npm.cmd run build --workspace backend
+```
