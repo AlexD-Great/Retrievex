@@ -4,6 +4,7 @@ pragma solidity ^0.8.24;
 contract Escrow {
     enum RequestStatus {
         Pending,
+        ReceiptSubmitted,
         Completed,
         Refunded
     }
@@ -18,6 +19,19 @@ contract Escrow {
         RequestStatus status;
     }
 
+    error EmptyCid();
+    error InvalidProvider();
+    error MissingPayment();
+    error InvalidTimeout();
+    error RequestNotPending();
+    error EmptyReceiptHash();
+    error OnlyAssignedProvider();
+    error OnlyClient();
+    error RequestTimedOut();
+    error RequestNotTimedOut();
+    error ReceiptNotSubmitted();
+    error PaymentTransferFailed();
+
     uint256 public nextRequestId;
     mapping(uint256 => RetrievalRequest) public requests;
 
@@ -29,7 +43,13 @@ contract Escrow {
         uint256 amount,
         uint256 timeoutAt
     );
-    event PaymentReleased(uint256 indexed requestId, address indexed provider, uint256 amount, bytes32 receiptHash);
+    event ReceiptSubmitted(uint256 indexed requestId, address indexed provider, bytes32 receiptHash);
+    event PaymentReleased(
+        uint256 indexed requestId,
+        address indexed provider,
+        uint256 amount,
+        bytes32 receiptHash
+    );
     event Refunded(uint256 indexed requestId, address indexed client, uint256 amount);
 
     function createRequest(
@@ -37,10 +57,10 @@ contract Escrow {
         address payable provider,
         uint256 timeoutAt
     ) external payable returns (uint256 requestId) {
-        require(bytes(cid).length > 0, "CID required");
-        require(provider != address(0), "Provider required");
-        require(msg.value > 0, "FIL required");
-        require(timeoutAt > block.timestamp, "Timeout must be future");
+        if (bytes(cid).length == 0) revert EmptyCid();
+        if (provider == address(0)) revert InvalidProvider();
+        if (msg.value == 0) revert MissingPayment();
+        if (timeoutAt <= block.timestamp) revert InvalidTimeout();
 
         requestId = nextRequestId++;
         requests[requestId] = RetrievalRequest({
@@ -56,34 +76,52 @@ contract Escrow {
         emit RetrievalRequested(requestId, cid, msg.sender, provider, msg.value, timeoutAt);
     }
 
-    function confirmReceipt(uint256 requestId, bytes32 receiptHash) external {
+    function submitReceipt(uint256 requestId, bytes32 receiptHash) external {
         RetrievalRequest storage request = requests[requestId];
-        require(request.client == msg.sender, "Only client confirms");
-        require(request.status == RequestStatus.Pending, "Request not pending");
-        require(block.timestamp <= request.timeoutAt, "Request timed out");
-        require(receiptHash != bytes32(0), "Receipt required");
+        if (request.provider != msg.sender) revert OnlyAssignedProvider();
+        if (request.status != RequestStatus.Pending) revert RequestNotPending();
+        if (block.timestamp > request.timeoutAt) revert RequestTimedOut();
+        if (receiptHash == bytes32(0)) revert EmptyReceiptHash();
+
+        request.status = RequestStatus.ReceiptSubmitted;
+        request.receiptHash = receiptHash;
+
+        emit ReceiptSubmitted(requestId, msg.sender, receiptHash);
+    }
+
+    function confirmReceipt(uint256 requestId) external {
+        RetrievalRequest storage request = requests[requestId];
+        if (request.client != msg.sender) revert OnlyClient();
+        if (request.status != RequestStatus.ReceiptSubmitted) revert ReceiptNotSubmitted();
+        if (request.receiptHash == bytes32(0)) revert EmptyReceiptHash();
 
         request.status = RequestStatus.Completed;
-        request.receiptHash = receiptHash;
 
         uint256 amount = request.amount;
         request.amount = 0;
-        request.provider.transfer(amount);
 
-        emit PaymentReleased(requestId, request.provider, amount, receiptHash);
+        (bool sent,) = request.provider.call{value: amount}("");
+        if (!sent) revert PaymentTransferFailed();
+
+        emit PaymentReleased(requestId, request.provider, amount, request.receiptHash);
     }
 
     function refundOnTimeout(uint256 requestId) external {
         RetrievalRequest storage request = requests[requestId];
-        require(request.client == msg.sender, "Only client refunds");
-        require(request.status == RequestStatus.Pending, "Request not pending");
-        require(block.timestamp > request.timeoutAt, "Request not timed out");
+        if (request.client != msg.sender) revert OnlyClient();
+        if (
+            request.status != RequestStatus.Pending
+                && request.status != RequestStatus.ReceiptSubmitted
+        ) revert RequestNotPending();
+        if (block.timestamp <= request.timeoutAt) revert RequestNotTimedOut();
 
         request.status = RequestStatus.Refunded;
 
         uint256 amount = request.amount;
         request.amount = 0;
-        request.client.transfer(amount);
+
+        (bool sent,) = request.client.call{value: amount}("");
+        if (!sent) revert PaymentTransferFailed();
 
         emit Refunded(requestId, request.client, amount);
     }
