@@ -1,0 +1,17 @@
+{
+  "name": "@retrievex/contracts",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "build": "hardhat compile",
+    "test": "hardhat test",
+    "lint": "hardhat compile",
+    "deploy:filecoin-testnet": "hardhat run scripts/deploy.ts --network filecoinTestnet"
+  },
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox": "^5.0.0",
+    "hardhat": "^2.22.0",
+    "typescript": "^5.5.0"
+  }
+}

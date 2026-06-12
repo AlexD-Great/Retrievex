@@ -1,0 +1,17 @@
+{
+  "name": "retrievex",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Retrievex Phase 1 MVP monorepo derived strictly from the Phase 1 PRD.",
+  "workspaces": [
+    "frontend",
+    "backend",
+    "contracts",
+    "shared"
+  ],
+  "scripts": {
+    "build": "npm run build --workspaces",
+    "test": "npm run test --workspaces",
+    "lint": "npm run lint --workspaces"
+  }
+}
