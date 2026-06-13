@@ -1,5 +1,6 @@
 import "@nomicfoundation/hardhat-toolbox";
 import type { HardhatUserConfig } from "hardhat/config";
+import "dotenv/config";
 
 const config: HardhatUserConfig = {
   solidity: "0.8.24",

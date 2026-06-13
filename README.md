@@ -43,6 +43,18 @@ Explicitly excluded scope:
 - Protocol-level Filecoin changes.
 - Any feature not defined in the Phase 1 PRD.
 
+## Deployments
+
+### Filecoin Testnet (Calibration)
+
+| Component | Address | Network | Date |
+| --- | --- | --- | --- |
+| Escrow Contract | `0x5239ad0C0872E9ECB3b8fcd0aB5418C7015C0978` | Filecoin Testnet | 2026-06-13 |
+
+**RPC Endpoint:** `https://rpc.ankr.com/filecoin_testnet`
+
+**Explorer:** [Filfox Testnet](https://calibration.filfox.io/address/0x5239ad0C0872E9ECB3b8fcd0aB5418C7015C0978)
+
 ## System Overview
 
 The Phase 1 system is intentionally deterministic and minimal.
