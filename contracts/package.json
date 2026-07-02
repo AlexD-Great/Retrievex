@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.1.0",
   "scripts": {
-    "build": "hardhat compile",
+    "build": "node init && hardhat compile",
     "test": "hardhat test",
     "lint": "hardhat compile",
     "deploy:calibration": "hardhat run scripts/deploy.ts --network calibration",

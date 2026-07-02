@@ -9,8 +9,12 @@
     "contracts",
     "shared"
   ],
+  "dependencies": {
+    "dotenv": "^8.2.0",
+    "node-fetch": "^3.3.2"
+  },
   "scripts": {
-    "build": "npm run build --workspaces",
+    "build": "node init && npm run build --workspaces",
     "test": "npm run test --workspaces",
     "lint": "npm run lint --workspaces"
   }
