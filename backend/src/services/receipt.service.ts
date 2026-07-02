@@ -1,75 +1,70 @@
 import type { RetrievalReceipt, StoredReceipt, SubmitReceiptInput } from "@retrievex/shared";
 import { createHash, randomUUID } from "node:crypto";
-import { verifyMessage } from "ethers";
 import type { ReceiptRepository } from "../repositories/receipt.repository.js";
 import type { RetrievalRepository } from "../repositories/retrieval.repository.js";
 import type { EscrowService } from "./escrow.service.js";
 import type { ReputationService } from "./reputation.service.js";
-
-interface ReceiptSigningPayload {
-  cid: string;
-  provider: string;
-  timestamp: string;
-  status: "success";
-}
+import type { RetrievalTransport } from "./retrieval-transport.js";
 
 export class ReceiptService {
   constructor(
     private readonly receipts: ReceiptRepository,
     private readonly retrievals: RetrievalRepository,
     private readonly escrow: EscrowService,
-    private readonly reputation: ReputationService
+    private readonly reputation: ReputationService,
+    private readonly retrieval: RetrievalTransport
   ) {}
 
+  /**
+   * SP-triggered: serves and verifies the data via Synapse, signs the receipt
+   * as the SP operator, and submits the receipt hash on-chain. The client then
+   * releases escrow from their wallet (see RetrievalService.confirmRelease).
+   */
   async submitReceipt(input: SubmitReceiptInput): Promise<StoredReceipt> {
     const request = await this.retrievals.findById(input.retrieval_id);
     if (!request) {
       throw new Error("Retrieval request not found.");
     }
+    if (request.status !== "pending") {
+      throw new Error("Receipt can only be submitted for a pending request.");
+    }
 
+    // Serve the CID bytes via Synapse and measure latency. Failure to serve
+    // means the SP did not fulfil the request: record a failure and do not
+    // submit a receipt on-chain.
+    let latencyMs: number;
+    try {
+      const result = await this.retrieval.retrieve(request.cid);
+      latencyMs = result.latencyMs;
+    } catch {
+      await this.reputation.recordFailure(request.sp_address);
+      throw new Error("Retrieval verification failed: data could not be served for the CID.");
+    }
+
+    const timestamp = Math.floor(Date.now() / 1000).toString();
     const receipt: RetrievalReceipt = {
       cid: request.cid,
       provider: request.sp_address,
-      timestamp: input.timestamp,
-      client_confirmation: input.client_confirmation,
+      timestamp,
       status: "success"
     };
-    const signingPayload: ReceiptSigningPayload = {
-      cid: receipt.cid,
-      provider: receipt.provider,
-      timestamp: receipt.timestamp,
-      status: receipt.status
-    };
-    const signingMessage = this.serialize(signingPayload);
+    const serialized = this.serialize(receipt);
+    const signature = await this.escrow.signAsProvider(serialized);
+    const receiptHash = `0x${createHash("sha256").update(serialized).digest("hex")}`;
 
-    const recoveredProvider = verifyMessage(signingMessage, input.provider_signature);
-    if (recoveredProvider.toLowerCase() !== request.sp_address.toLowerCase()) {
-      throw new Error("Invalid provider receipt signature.");
-    }
-
-    const recoveredClient = verifyMessage(signingMessage, input.client_confirmation);
-    if (recoveredClient.toLowerCase() !== request.client_address.toLowerCase()) {
-      throw new Error("Invalid client confirmation signature.");
-    }
-
-    const receiptHash = this.hashReceipt(receipt);
-    await this.escrow.releasePayment(request.id, receiptHash);
-    await this.retrievals.updateStatus(request.id, "completed");
-    await this.reputation.recordSuccess(request.sp_address, 0);
+    await this.escrow.submitReceipt(request.id, receiptHash);
+    await this.retrievals.updateStatus(request.id, "in-progress");
+    await this.reputation.recordSuccess(request.sp_address, latencyMs);
 
     return this.receipts.create({
       id: randomUUID(),
       retrieval_id: request.id,
-      signature: input.provider_signature,
-      timestamp: input.timestamp
+      signature,
+      timestamp
     });
   }
 
-  private hashReceipt(receipt: RetrievalReceipt): string {
-    return `0x${createHash("sha256").update(this.serialize(receipt)).digest("hex")}`;
-  }
-
-  private serialize(payload: RetrievalReceipt | ReceiptSigningPayload): string {
+  private serialize(payload: RetrievalReceipt): string {
     return JSON.stringify(payload);
   }
 }
