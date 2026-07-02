@@ -228,10 +228,3 @@ High level only:
 4. Set the deployed escrow address in the backend environment.
 5. Submit retrieval requests through the backend API.
 
-## Scope Limitation
-
-This repository implements only the Retrievex Phase 1 MVP as defined in the PRD.
-
-Anything outside the PRD is intentionally excluded. No hidden, implied, or future-roadmap functionality exists in this implementation.
-
-This system is strictly derived from the Retrievex Phase 1 PRD. No functionality exists outside of defined scope.
