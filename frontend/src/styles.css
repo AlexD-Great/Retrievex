@@ -261,3 +261,31 @@ th {
     grid-template-columns: 1fr;
   }
 }
+
+.nav-links {
+  display: flex;
+  flex: 1;
+  gap: 24px;
+}
+
+.wallet {
+  align-items: center;
+  display: flex;
+  gap: 12px;
+}
+
+.wallet-address {
+  color: #0b4bd4;
+  font-variant-numeric: tabular-nums;
+}
+
+.row-actions {
+  align-items: center;
+  display: flex;
+  gap: 8px;
+}
+
+.row-error {
+  color: #b4232a;
+  font-size: 0.8rem;
+}
