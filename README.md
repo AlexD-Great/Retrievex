@@ -207,19 +207,10 @@ Intentional simplifications:
 - Lightweight monitoring instead of SLA enforcement.
 - Testnet escrow deployment before any production network assumption.
 
-Risks removed from Phase 1:
-
-- Cryptographic proof complexity.
-- Stake and penalty mechanics.
-- Dynamic pricing and matching logic.
-- Enterprise service guarantees.
-- Protocol-level Filecoin changes.
-
-This scope is suitable for a 6-month MVP because each module maps directly to a PRD requirement, the execution path is linear, and excluded systems are explicitly outside implementation authority.
 
 ## Setup Instructions
 
-Placeholder format:
+Setupn Instructions:
 
 ```bash
 npm install
