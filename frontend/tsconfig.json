@@ -3,6 +3,9 @@
   "compilerOptions": {
     "jsx": "react-jsx",
     "outDir": "dist",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "noEmit": true,
     "paths": {
       "@retrievex/shared": [
         "../shared/src/index.ts"

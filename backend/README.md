@@ -20,14 +20,16 @@ Reason: small REST API surface that matches the PRD endpoint list without adding
 Use `.env.example` at the repository root as the placeholder template.
 
 - `PORT`
+- `DB_PROVIDER`
 - `DATABASE_URL`
+- `FIREBASE_PROJECT_ID`
 - `FILECOIN_RPC_URL`
 - `ESCROW_CONTRACT_ADDRESS`
-- `CLIENT_PRIVATE_KEY`
 - `SP_PRIVATE_KEY`
 - `RETRIEVAL_TIMEOUT_SECONDS`
+- `SYNAPSE_WITH_CDN`
 
-The backend-driven Phase 1 MVP uses separate client and Storage Provider testnet keys because the escrow contract enforces caller roles.
+Clients deposit and release escrow from their own browser wallet, so no client key is stored server-side. The backend holds only the `SP_PRIVATE_KEY` to submit receipts on-chain and authenticate Synapse retrieval.
 
 ## Build
 
