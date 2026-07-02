@@ -2,7 +2,6 @@ export interface RetrievalReceipt {
   cid: string;
   provider: string;
   timestamp: string;
-  client_confirmation: string;
   status: "success";
 }
 

@@ -1,11 +1,13 @@
 import type { RetrievalRequest } from "@retrievex/shared";
+import { RequestActions } from "../components/RequestActions";
 import { StatusBadge } from "../components/StatusBadge";
 
 interface DashboardPageProps {
   requests: RetrievalRequest[];
+  onRequestUpdated: (request: RetrievalRequest) => void;
 }
 
-export function DashboardPage({ requests }: DashboardPageProps) {
+export function DashboardPage({ requests, onRequestUpdated }: DashboardPageProps) {
   const activeRequests = requests.filter((request) =>
     ["pending", "in-progress"].includes(request.status)
   );
@@ -61,12 +63,13 @@ export function DashboardPage({ requests }: DashboardPageProps) {
                 <th>Storage Provider</th>
                 <th>Amount FIL</th>
                 <th>Status</th>
+                <th>Action</th>
               </tr>
             </thead>
             <tbody>
               {activeRequests.length === 0 ? (
                 <tr>
-                  <td colSpan={4}>No active retrieval requests.</td>
+                  <td colSpan={5}>No active retrieval requests.</td>
                 </tr>
               ) : (
                 activeRequests.map((request) => (
@@ -76,6 +79,9 @@ export function DashboardPage({ requests }: DashboardPageProps) {
                     <td>{request.amount_fil}</td>
                     <td>
                       <StatusBadge status={request.status} />
+                    </td>
+                    <td>
+                      <RequestActions request={request} onUpdated={onRequestUpdated} />
                     </td>
                   </tr>
                 ))
