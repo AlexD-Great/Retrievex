@@ -210,7 +210,7 @@ Intentional simplifications:
 
 ## Setup Instructions
 
-Setupn Instructions:
+Setup Instructions:
 
 ```bash
 npm install
