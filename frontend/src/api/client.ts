@@ -1,7 +1,9 @@
 import type {
+  ConfirmReleaseInput,
   CreateRetrievalRequestInput,
   ProviderMetrics,
   RetrievalRequest,
+  StoredReceipt,
   SubmitReceiptInput
 } from "@retrievex/shared";
 
@@ -29,14 +31,24 @@ export async function createRetrievalRequest(
   return parseJsonResponse<RetrievalRequest>(response);
 }
 
-export async function submitReceipt(input: SubmitReceiptInput) {
+export async function submitReceipt(input: SubmitReceiptInput): Promise<StoredReceipt> {
   const response = await fetch(`${API_BASE_URL}/retrieval/receipt`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(input)
   });
 
-  return parseJsonResponse(response);
+  return parseJsonResponse<StoredReceipt>(response);
+}
+
+export async function confirmRelease(input: ConfirmReleaseInput): Promise<RetrievalRequest> {
+  const response = await fetch(`${API_BASE_URL}/retrieval/confirm`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(input)
+  });
+
+  return parseJsonResponse<RetrievalRequest>(response);
 }
 
 export async function getRetrievalStatus(id: string): Promise<RetrievalRequest> {
