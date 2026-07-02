@@ -1,86 +1,58 @@
-import type { CreateRetrievalRequestInput } from "@retrievex/shared";
-import { Contract, JsonRpcProvider, Wallet, parseEther } from "ethers";
-import type { Log } from "ethers";
+import { ESCROW_ABI, EscrowRequestStatus } from "@retrievex/shared";
+import { Contract, JsonRpcProvider, Wallet } from "ethers";
 import type { BackendConfig } from "../config.js";
 
-export interface EscrowLockResult {
-  escrow_request_id: string;
-  escrow_status: "pending";
+export interface OnChainRequest {
+  cid: string;
+  client: string;
+  provider: string;
+  amount: bigint;
+  timeoutAt: bigint;
+  status: EscrowRequestStatus;
 }
 
-const ESCROW_ABI = [
-  "event RetrievalRequested(uint256 indexed requestId, string cid, address indexed client, address indexed provider, uint256 amount, uint256 timeoutAt)",
-  "function createRequest(string cid, address provider, uint256 timeoutAt) payable returns (uint256 requestId)",
-  "function submitReceipt(uint256 requestId, bytes32 receiptHash)",
-  "function confirmReceipt(uint256 requestId)"
-];
-
+/**
+ * Backend-side view of the escrow. In the wallet model the CLIENT deposits and
+ * releases funds from their own wallet, so the backend only:
+ *  - reads on-chain requests to verify a client actually locked funds, and
+ *  - submits the receipt hash as the SP operator (holds the SP key).
+ */
 export class EscrowService {
   private readonly provider: JsonRpcProvider;
-  private readonly clientWallet: Wallet;
   private readonly spWallet: Wallet;
-  private readonly clientContract: Contract;
+  private readonly readContract: Contract;
   private readonly spContract: Contract;
 
   constructor(private readonly config: BackendConfig) {
     this.provider = new JsonRpcProvider(config.filecoinRpcUrl);
-    this.clientWallet = new Wallet(config.clientPrivateKey, this.provider);
     this.spWallet = new Wallet(config.spPrivateKey, this.provider);
-    this.clientContract = new Contract(
-      config.escrowContractAddress,
-      ESCROW_ABI,
-      this.clientWallet
-    );
+    this.readContract = new Contract(config.escrowContractAddress, ESCROW_ABI, this.provider);
     this.spContract = new Contract(config.escrowContractAddress, ESCROW_ABI, this.spWallet);
-  }
-
-  getClientAddress(): string {
-    return this.clientWallet.address;
   }
 
   getProviderAddress(): string {
     return this.spWallet.address;
   }
 
-  async lockFunds(input: CreateRetrievalRequestInput): Promise<EscrowLockResult> {
-    const timeoutAt = Math.floor(Date.now() / 1000) + this.config.retrievalTimeoutSeconds;
-    const transaction = await this.clientContract.createRequest(
-      input.cid,
-      input.sp_address,
-      timeoutAt,
-      { value: parseEther(input.amount_fil) }
-    );
-    const receipt = await transaction.wait();
-    const event = receipt.logs
-      .map((log: Log) => {
-        try {
-          return this.clientContract.interface.parseLog(log);
-        } catch {
-          return null;
-        }
-      })
-      .find((parsedLog: { name?: string } | null) => parsedLog?.name === "RetrievalRequested");
-
-    if (!event) {
-      throw new Error("RetrievalRequested event not found.");
-    }
-
+  async getOnChainRequest(requestId: string): Promise<OnChainRequest> {
+    const result = await this.readContract.requests(requestId);
     return {
-      escrow_request_id: event.args.requestId.toString(),
-      escrow_status: "pending"
+      cid: result.cid,
+      client: result.client,
+      provider: result.provider,
+      amount: result.amount,
+      timeoutAt: result.timeoutAt,
+      status: Number(result.status) as EscrowRequestStatus
     };
   }
 
-  async releasePayment(retrievalId: string, receiptHash: string): Promise<void> {
-    const submitTransaction = await this.spContract.submitReceipt(retrievalId, receiptHash);
-    await submitTransaction.wait();
-
-    const confirmTransaction = await this.clientContract.confirmReceipt(retrievalId);
-    await confirmTransaction.wait();
+  async submitReceipt(requestId: string, receiptHash: string): Promise<void> {
+    const transaction = await this.spContract.submitReceipt(requestId, receiptHash);
+    await transaction.wait();
   }
 
-  async refundOnTimeout(retrievalId: string): Promise<void> {
-    void retrievalId;
-    throw new Error("Timeout refund must call the deployed FVM escrow contract.");
+  /** Signs a receipt payload as the SP operator, producing the stored receipt signature. */
+  async signAsProvider(message: string): Promise<string> {
+    return this.spWallet.signMessage(message);
   }
 }
