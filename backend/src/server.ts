@@ -1,12 +1,13 @@
-import { createApp } from "./app.js";
+import { bootstrapApp } from "./app.js";
 import { loadConfig } from "./config.js";
-import { initializeDatabase } from "./db/database.js";
 
 const config = loadConfig();
-const app = createApp();
+const { app, dataLayer } = await bootstrapApp(config);
 
-await initializeDatabase();
+await dataLayer.initialize();
 
 app.listen(config.port, () => {
-  console.log(`Retrievex Phase 1 API listening on port ${config.port}`);
+  console.log(
+    `Retrievex Phase 1 API listening on port ${config.port} (db: ${config.databaseProvider})`
+  );
 });
