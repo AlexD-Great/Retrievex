@@ -132,10 +132,9 @@ The backend exposes only the Phase 1 PRD endpoints:
 
 No additional public API surface is defined.
 
-Backend execution uses configured Filecoin EVM testnet signers for the Phase 1 MVP:
+Escrow deposit and release are performed by the client's own browser wallet on the Filecoin EVM testnet. The backend uses a single Storage Provider signer:
 
-- `CLIENT_PRIVATE_KEY` creates escrow requests and confirms receipts.
-- `SP_PRIVATE_KEY` submits signed receipt hashes.
+- `SP_PRIVATE_KEY` submits signed receipt hashes on-chain and authenticates Synapse retrieval.
 - `RETRIEVAL_TIMEOUT_SECONDS` defaults to `86400` seconds.
 
 ## Data Model

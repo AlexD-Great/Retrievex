@@ -6,6 +6,7 @@
     "build": "hardhat compile",
     "test": "hardhat test",
     "lint": "hardhat compile",
+    "deploy:calibration": "hardhat run scripts/deploy.ts --network calibration",
     "deploy:filecoin-testnet": "hardhat run scripts/deploy.ts --network filecoinTestnet"
   },
   "devDependencies": {
